@@ -399,7 +399,7 @@ body.blur .nm,body.blur .was s,body.blur .mem .sub{filter:blur(6px)}
 
 <script>
 (function(){
-const REV='12',REV_DATE='11 Oct 2026';
+const REV='13',REV_DATE='16 Oct 2026';
 const KEY='callingPlanner.v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -419,8 +419,37 @@ const blank=()=>({orgs:[],callings:[],members:[],hidden:[],groupColors:{}});
 const NG=7;
 
 function load(){try{const r=localStorage.getItem(KEY);if(!r)return null;const d=JSON.parse(r);return valid(d)?norm(d):null}catch(e){return null}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function valid(d){return d&&Array.isArray(d.orgs)&&Array.isArray(d.callings)&&Array.isArray(d.members)}
+let storageFailureShown=false;
+function save(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    storageFailureShown=false;
+    return true;
+  }catch(e){
+    if(!storageFailureShown){
+      storageFailureShown=true;
+      window.alert('Calling Planner could not save changes in this browser. Your work may be lost when you close the page. Export a backup now and check browser storage settings.');
+    }
+    return false;
+  }
+}
+function valid(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)||!Array.isArray(d.orgs)||!Array.isArray(d.callings)||!Array.isArray(d.members))return false;
+  const ids=a=>a.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.id==='string'&&x.id.length>0)&&new Set(a.map(x=>x.id)).size===a.length;
+  if(!ids(d.orgs)||!ids(d.callings)||!ids(d.members))return false;
+  const orgIds=new Set(d.orgs.map(x=>x.id)),memberIds=new Set(d.members.map(x=>x.id));
+  if(!d.orgs.every(o=>typeof o.name==='string'&&(o.collapsed===undefined||typeof o.collapsed==='boolean')))return false;
+  if(!d.members.every(m=>typeof m.name==='string'&&(m.avail===undefined||typeof m.avail==='boolean')))return false;
+  if(!d.callings.every(c=>typeof c.title==='string'&&orgIds.has(c.orgId)
+      &&(c.group===undefined||typeof c.group==='string')
+      &&(c.since===undefined||typeof c.since==='string')
+      &&(c.current==null||memberIds.has(c.current))
+      &&(c.proposed===undefined||c.proposed==null||memberIds.has(c.proposed))
+      &&(c.cands===undefined||(Array.isArray(c.cands)&&c.cands.every(id=>memberIds.has(id))))))return false;
+  if(d.hidden!==undefined&&(!Array.isArray(d.hidden)||!d.hidden.every(id=>orgIds.has(id))))return false;
+  if(d.groupColors!==undefined&&(!d.groupColors||typeof d.groupColors!=='object'||Array.isArray(d.groupColors)))return false;
+  return true;
+}
 function norm(d){return{orgs:d.orgs,callings:d.callings.map(c=>({...c,group:c.group||'',cands:Array.isArray(c.cands)?c.cands.filter(Boolean):[],current:c.current||null,proposed:c.proposed===undefined?(c.current||null):(c.proposed||null)})),members:d.members.map(m=>({...m,avail:!!m.avail})),hidden:Array.isArray(d.hidden)?d.hidden:[],groupColors:(d.groupColors&&typeof d.groupColors==='object')?d.groupColors:{}}}
 
 let S=load()||blank();
@@ -443,7 +472,15 @@ const deciding=c=>!c.proposed&&cands(c).length>0;
 const isOpen=c=>!c.proposed&&cands(c).length===0;
 function mapBy(field){const m={};for(const c of S.callings){const v=c[field];if(v)(m[v]=m[v]||[]).push(c)}return m}
 
-function commit(fn,msg){undoStack.push(JSON.stringify(S));if(undoStack.length>150)undoStack.shift();fn();save();render();if(msg)toast(msg)}
+function commit(fn,msg){
+  const previous=JSON.stringify(S);
+  fn();
+  undoStack.push(previous);
+  if(undoStack.length>150)undoStack.shift();
+  const saved=save();
+  render();
+  if(msg&&saved)toast(msg);
+}
 function undo(){if(!undoStack.length){toast('Nothing to undo');return}S=JSON.parse(undoStack.pop());save();render();toast('Undone')}
 
 function setRevPop(on){const p=$('#revPop');if(!p)return;p.hidden=!on;$('#revTag').setAttribute('aria-expanded',on?'true':'false')}
@@ -1066,7 +1103,7 @@ document.addEventListener('click',async e=>{
     case 'modalPick':closeModal(d.v);break;
     case 'copySum':{const t=summaryText().map(x=>`${x.o.name}\n${[...x.rel,...x.call,...x.dec].map(s=>'  '+s).join('\n')}`).join('\n\n')+`\n\nCalling Planner rev ${REV} — drafted ${new Date().toLocaleDateString()}`;copyText(t);break}
     case 'applyAll':{closeModal();const ok=await askConfirm('Mark all changes as done?','Do this after the releases and calls have been extended, sustained, and recorded in LCR. The draft becomes the new current list.','Mark as done');if(ok)commit(()=>{S.callings.forEach(c=>c.current=c.proposed)},'Draft is now the current list');break}
-    case 'clearAll':{closeModal();const ok=await askConfirm('Clear everything?','This removes all organizations, callings, and members from this browser. Save a backup first if you might need it.','Clear everything',true);if(ok){commit(()=>{S=blank()},'Cleared');try{localStorage.removeItem(KEY)}catch(e){}}break}
+    case 'clearAll':{closeModal();const ok=await askConfirm('Clear everything?','This removes all organizations, callings, and members from this browser. Save a backup first if you might need it.','Clear everything',true);if(ok){S=blank();undoStack=[];sel=null;drag=null;fill=null;try{localStorage.removeItem(KEY)}catch(e){window.alert('Could not erase Calling Planner browser storage. Check your browser settings and clear site data manually.')}render();toast('Board cleared — cannot be undone')}break}
     case 'addOrg':{const n=await askText('New organization','','Organization name');if(n&&n.trim())commit(()=>getOrg(n.trim()),null);break}
     case 'renameOrg':{const o=O(d.oid);const n=await askText('Rename organization',o.name);if(n&&n.trim())commit(()=>{o.name=n.trim()},null);break}
     case 'moveOrg':{const i=S.orgs.findIndex(o=>o.id===d.oid),j=i+Number(d.dir);if(j>=0&&j<S.orgs.length)commit(()=>{const [o]=S.orgs.splice(i,1);S.orgs.splice(j,0,o)},null);break}
@@ -1122,7 +1159,7 @@ document.addEventListener('click',async e=>{
       if(ok)commit(()=>{S.callings.forEach(c=>{if(c.orgId===d.oid&&(c.group||'')===d.g)c.group=''})},`${d.g} grouping removed`);
       break}
     case 'delC':{const c=C(d.cid);const ok=await askConfirm(`Delete ${c.title}?`,'This removes the calling from the board.','Delete',true);if(ok)commit(()=>{S.callings=S.callings.filter(x=>x.id!==c.id)},null);break}
-    case 'delMember':{const m=M(d.mid);const ok=await askConfirm(`Remove ${m.name}?`,'They are removed from the member list and from any callings on the board.','Remove',true);if(ok)commit(()=>{S.members=S.members.filter(x=>x.id!==m.id);S.callings.forEach(c=>{if(c.current===m.id)c.current=null;if(c.proposed===m.id)c.proposed=null})},null);break}
+    case 'delMember':{const m=M(d.mid);const ok=await askConfirm(`Remove ${m.name}?`,'They are removed from the member list and from any callings on the board.','Remove',true);if(ok)commit(()=>{S.members=S.members.filter(x=>x.id!==m.id);S.callings.forEach(c=>{if(c.current===m.id)c.current=null;if(c.proposed===m.id)c.proposed=null;c.cands=cands(c).filter(id=>id!==m.id)})},null);break}
   }
 });
 
