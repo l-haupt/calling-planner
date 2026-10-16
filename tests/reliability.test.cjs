@@ -32,4 +32,8 @@ assert.equal(valid(legacy),true,'Legacy callings remain accepted');
 assert(script[1].includes('c.cands=cands(c).filter(id=>id!==m.id)'), 'Member deletion cleans candidates');
 assert(script[1].includes('S=blank();undoStack=[]'), 'Clear resets undo history');
 assert(script[1].includes('window.alert(\'Calling Planner could not save changes'), 'Save failures are visible');
+assert(script[1].includes("new Blob([data],{type:'application/json;charset=utf-8'})"), 'Backup is generated as JSON');
+assert(script[1].includes("link.download=fn"), 'Backup uses a downloaded filename');
+assert(script[1].includes("URL.createObjectURL(blob)"), 'Browser backup uses a downloadable blob');
+assert(!script[1].includes('Copy this text into a file'), 'Manual copy fallback removed');
 console.log('Calling Planner reliability checks passed');
