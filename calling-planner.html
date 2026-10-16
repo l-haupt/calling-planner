@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calling Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F4;--panel:#FFFFFF;--ink:#1D2638;--muted:#5B667A;--line:#D5DBE4;
+  --navy:#24365C;--gold:#B7862A;--gold-soft:#F6EBD3;--new:#2C7A67;--new-soft:#DDF0EA;
+  --rel:#B0455A;--rel-soft:#F7E2E6;--chip:#F2F4F8;--hover:#F6F8FB;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141A26;--panel:#1C2433;--ink:#E6EAF2;--muted:#9AA5B8;--line:#2E3950;
+  --navy:#A9BFEA;--gold:#E0B45C;--gold-soft:#3A3120;--new:#6CC7AE;--new-soft:#1B3A33;
+  --rel:#E48A9B;--rel-soft:#3E232A;--chip:#243044;--hover:#222C3D;}}
+:root[data-theme="dark"]{
+  --bg:#141A26;--panel:#1C2433;--ink:#E6EAF2;--muted:#9AA5B8;--line:#2E3950;
+  --navy:#A9BFEA;--gold:#E0B45C;--gold-soft:#3A3120;--new:#6CC7AE;--new-soft:#1B3A33;
+  --rel:#E48A9B;--rel-soft:#3E232A;--chip:#243044;--hover:#222C3D;}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Header */
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.brand{font-family:Spectral,Georgia,serif;font-weight:600;font-size:1.35rem;color:var(--navy);margin:0;white-space:nowrap}
+.revwrap{position:relative;margin-right:6px}
+.rev{font-size:.74rem;font-weight:600;color:var(--muted);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.rev:hover{color:var(--ink);border-color:var(--navy)}
+.rev[aria-expanded="true"]{background:var(--navy);color:var(--panel);border-color:var(--navy)}
+.revpop{position:absolute;top:calc(100% + 7px);left:0;z-index:60;width:min(340px,86vw);max-height:min(70vh,520px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 28px rgba(10,15,25,.18)}
+.revpop[hidden]{display:none}
+.revpop h4{font-family:Spectral,Georgia,serif;font-weight:600;font-size:1rem;color:var(--navy);margin:0 0 2px}
+.revpop p{margin:0 0 8px;font-size:.84rem;color:var(--muted);font-weight:600}
+.changelog{list-style:none;padding:0;margin:0;font-size:.83rem;color:var(--muted);line-height:1.45}
+.changelog li{padding:3px 0;border-top:1px solid var(--line)}
+.changelog li:first-child{border-top:0}
+.changelog strong{color:var(--ink)}
+.search{flex:1 1 220px;max-width:340px;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 12px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:var(--panel)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;font-weight:500}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--navy);color:var(--panel);border-color:var(--navy)}
+.btn[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold)}
+.btn.danger{color:var(--rel)}
+.spacer{flex:1}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;flex:1 1 300px;scrollbar-width:thin;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
+.ochip{white-space:nowrap;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 11px;font-size:.85rem;color:var(--muted)}
+.ochip[aria-pressed="true"]{background:var(--chip);color:var(--ink);border-color:var(--navy)}
+.ochip .n{color:var(--rel);font-weight:600;margin-left:4px}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:.88rem;color:var(--muted);white-space:nowrap}
+
+/* Main */
+main{flex:1;min-height:0;display:grid;grid-template-columns:300px 1fr}
+aside{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:transparent;padding:10px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--navy)}
+.tabs .count{font-weight:500;color:var(--muted)}
+.pane{flex:1;min-height:0;overflow:auto;padding:10px 12px}
+.pane[hidden]{display:none}
+.pane-tools{display:flex;gap:6px;margin-bottom:8px}
+.pane-tools select{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+#benchZone{min-height:120px;border-radius:8px;border:1px dashed transparent;padding:2px}
+body.dragging-slot #benchZone,body.picking-slot #benchZone{border-color:var(--rel);background:var(--rel-soft)}
+.zonehint{display:none;font-size:.8rem;color:var(--rel);padding:4px 6px}
+body.dragging-slot .zonehint,body.picking-slot .zonehint{display:block}
+.mem{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0 7px;padding:5px 4px;border-radius:6px}
+.mem:hover{background:var(--hover)}
+.mem .sub{grid-column:1/-1;font-size:.76rem;color:var(--muted);padding-left:26px}
+.availbox{width:16px;height:16px;accent-color:var(--gold);margin:0;cursor:pointer}
+.mem.is-avail .chip{border-color:var(--gold);background:var(--gold-soft)}
+.mem .memdel{opacity:0;color:var(--rel);transition:opacity .12s}
+.mem:hover .memdel,.mem:focus-within .memdel{opacity:1}
+body.edit .mem .memdel{opacity:.7}
+@media (hover:none){.mem .memdel{opacity:.7}}
+.avail-row{align-items:center;gap:4px 8px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
+.avail-row .toggle{white-space:normal}
+.avail-row .count{font-size:.78rem;color:var(--muted)}
+.availbtns{display:flex;gap:4px;margin-left:auto}
+.availbtns .ibtn{white-space:nowrap;border:1px solid var(--line)}
+.pane.help{font-size:.88rem}
+.pane.help h3{font-family:Spectral,Georgia,serif;font-size:1rem;color:var(--navy);margin:14px 0 4px}
+.pane.help h3:first-child{margin-top:0}
+.pane.help p{margin:0 0 4px;color:var(--muted);line-height:1.5}
+.pane.help ul{margin:0;padding-left:18px;color:var(--muted);line-height:1.5}
+.pane.help strong{color:var(--ink);font-weight:600}
+.pane.help .revline{color:var(--ink);font-weight:600}
+.pane.help .changelog{list-style:none;padding:0;margin-top:6px}
+.pane.help .changelog li{padding:2px 0;font-size:.84rem}
+.mem .sub.rel{color:var(--rel)}
+.addform{display:flex;gap:6px;margin-top:10px}
+.addform input{flex:1;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.openitem{display:block;width:100%;text-align:left;border:1px dashed var(--rel);background:var(--rel-soft);border-radius:8px;padding:7px 10px;margin-bottom:6px}
+.openitem .org-n{font-size:.76rem;color:var(--muted)}
+.openitem .was{font-size:.76rem;color:var(--rel)}
+.legend{border-top:1px solid var(--line);padding:8px 12px;font-size:.78rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lg-new::before{background:var(--new-soft);border:1px solid var(--new)}
+.lg-rel::before{background:var(--rel-soft);border:1px solid var(--rel)}
+.lg-open::before{border:1px dashed var(--rel)}
+.empty-note{color:var(--muted);font-size:.88rem;padding:8px 4px}
+
+/* Board */
+.board{overflow:auto;padding:14px;min-height:0}
+.cols{column-width:250px;column-gap:14px}
+body.compact .cols{column-width:205px}
+.org{break-inside:avoid;margin:0 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;display:inline-block;width:100%}
+.org-h{display:flex;align-items:center;gap:6px;padding:9px 10px 8px 12px;border-bottom:1px solid var(--line)}
+.org-h h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:1.05rem;margin:0;flex:1;color:var(--navy)}
+.org.collapsed .org-h{border-bottom:0}
+.badge{font-size:.72rem;font-weight:600;border-radius:999px;padding:1px 7px}
+.badge.open{background:var(--rel-soft);color:var(--rel)}
+.badge.ch{background:var(--gold-soft);color:var(--gold)}
+.ibtn{border:0;background:transparent;color:var(--muted);border-radius:6px;padding:2px 5px;font-size:.85rem;line-height:1}
+.ibtn:hover{background:var(--chip);color:var(--ink)}
+.ibtn svg{display:block}
+.slot .acts .ibtn[data-act="delC"]:hover,.band-acts .ibtn[data-act="ungroupG"]:hover,.org-h .ibtn[data-act="delOrg"]:hover{color:var(--rel)}
+.slots{padding:5px}
+.band{--gc-bg:var(--chip);--gc-line:var(--line);--gc-text:var(--muted);
+  border-left:3px solid var(--gc-line);background:var(--gc-bg);border-radius:0 8px 8px 0;margin:4px 0 7px;padding:1px 0 3px}
+.band-h{display:flex;align-items:center;gap:6px;padding:4px 7px 3px 9px}
+.band-name{font-size:.72rem;font-weight:700;color:var(--gc-text);letter-spacing:.01em}
+.band-n{font-size:.68rem;font-weight:600;color:var(--gc-text);opacity:.65}
+.band-acts{margin-left:auto;display:flex;gap:1px}
+.band-acts .ibtn{color:var(--gc-text);font-size:.78rem;padding:1px 4px}
+.band-slots{padding:0 2px}
+.band .slot:hover{background:rgba(255,255,255,.55)}
+body.compact .band{margin:2px 0 4px}
+body.compact .band-h{padding:2px 6px 1px 8px}
+.g0{--gc-bg:hsl(215 60% 96%);--gc-line:hsl(215 48% 58%);--gc-text:hsl(215 46% 33%)}
+.g1{--gc-bg:hsl(158 48% 95%);--gc-line:hsl(158 42% 44%);--gc-text:hsl(158 44% 26%)}
+.g2{--gc-bg:hsl(272 52% 96%);--gc-line:hsl(272 40% 62%);--gc-text:hsl(272 38% 40%)}
+.g3{--gc-bg:hsl(28 68% 95%);--gc-line:hsl(28 62% 52%);--gc-text:hsl(28 58% 31%)}
+.g4{--gc-bg:hsl(340 58% 96%);--gc-line:hsl(340 45% 62%);--gc-text:hsl(340 44% 38%)}
+.g5{--gc-bg:hsl(92 42% 94%);--gc-line:hsl(92 36% 42%);--gc-text:hsl(92 40% 25%)}
+.g6{--gc-bg:hsl(192 55% 95%);--gc-line:hsl(192 48% 44%);--gc-text:hsl(192 50% 27%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .band .slot:hover{background:rgba(255,255,255,.06)}
+:root:not([data-theme="light"]) .g0{--gc-bg:hsl(215 30% 18%);--gc-line:hsl(215 44% 54%);--gc-text:hsl(215 50% 78%)}
+:root:not([data-theme="light"]) .g1{--gc-bg:hsl(158 26% 16%);--gc-line:hsl(158 38% 48%);--gc-text:hsl(158 44% 74%)}
+:root:not([data-theme="light"]) .g2{--gc-bg:hsl(272 26% 19%);--gc-line:hsl(272 36% 60%);--gc-text:hsl(272 44% 80%)}
+:root:not([data-theme="light"]) .g3{--gc-bg:hsl(28 32% 17%);--gc-line:hsl(28 54% 54%);--gc-text:hsl(28 58% 76%)}
+:root:not([data-theme="light"]) .g4{--gc-bg:hsl(340 26% 19%);--gc-line:hsl(340 42% 60%);--gc-text:hsl(340 48% 80%)}
+:root:not([data-theme="light"]) .g5{--gc-bg:hsl(92 22% 15%);--gc-line:hsl(92 32% 46%);--gc-text:hsl(92 36% 72%)}
+:root:not([data-theme="light"]) .g6{--gc-bg:hsl(192 30% 16%);--gc-line:hsl(192 42% 48%);--gc-text:hsl(192 48% 76%)}}
+:root[data-theme="dark"] .band .slot:hover{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .g0{--gc-bg:hsl(215 30% 18%);--gc-line:hsl(215 44% 54%);--gc-text:hsl(215 50% 78%)}
+:root[data-theme="dark"] .g1{--gc-bg:hsl(158 26% 16%);--gc-line:hsl(158 38% 48%);--gc-text:hsl(158 44% 74%)}
+:root[data-theme="dark"] .g2{--gc-bg:hsl(272 26% 19%);--gc-line:hsl(272 36% 60%);--gc-text:hsl(272 44% 80%)}
+:root[data-theme="dark"] .g3{--gc-bg:hsl(28 32% 17%);--gc-line:hsl(28 54% 54%);--gc-text:hsl(28 58% 76%)}
+:root[data-theme="dark"] .g4{--gc-bg:hsl(340 26% 19%);--gc-line:hsl(340 42% 60%);--gc-text:hsl(340 48% 80%)}
+:root[data-theme="dark"] .g5{--gc-bg:hsl(92 22% 15%);--gc-line:hsl(92 32% 46%);--gc-text:hsl(92 36% 72%)}
+:root[data-theme="dark"] .g6{--gc-bg:hsl(192 30% 16%);--gc-line:hsl(192 42% 48%);--gc-text:hsl(192 48% 76%)}
+.slot{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 4px;padding:6px 7px;border-radius:7px;border:1px solid transparent}
+.slot:hover{background:var(--hover)}
+.slot .t{grid-column:1/2;font-size:.78rem;color:var(--muted)}
+.slot .who{grid-column:1/2;min-width:0}
+.slot .acts{grid-column:2;grid-row:1/3;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px;opacity:.55}
+.slot:hover .acts,.slot:focus-within .acts{opacity:1}
+.slot .was{grid-column:1/-1;font-size:.75rem;color:var(--rel)}
+.slot .was s{text-decoration-thickness:1px}
+body.compact .slot{padding:3px 6px}
+body.compact .slot .t{font-size:.72rem}
+body.picking .slot:not(.current-view),body.dragging .slot{border-color:var(--line);border-style:dashed}
+.slot.over,.openitem.over{background:var(--gold-soft)!important;border-color:var(--gold)!important;border-style:solid!important}
+.slot.flash{animation:flash 1.2s ease}
+@keyframes flash{0%,40%{background:var(--gold-soft)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.slot.flash{animation:none;background:var(--gold-soft)}}
+
+.chip{display:inline-flex;align-items:center;max-width:100%;border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:3px 11px;font-weight:600;font-size:.9rem;cursor:grab;text-align:left}
+.chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.new{background:var(--new-soft);border-color:var(--new)}
+.chip.sel{outline:2px solid var(--gold);outline-offset:1px}
+.chip.static{cursor:default}
+body.compact .chip{padding:1px 9px;font-size:.84rem}
+.vacant{display:inline-block;border:1px dashed var(--rel);color:var(--rel);border-radius:999px;padding:2px 11px;font-size:.85rem;background:transparent}
+.vacant.plain{border-color:var(--line);color:var(--muted)}
+.vacant.openbtn:hover{background:var(--rel-soft);border-style:solid}
+.candlist{display:flex;flex-direction:column;gap:3px;width:100%}
+.candhead{font-size:.7rem;font-weight:700;color:var(--gold)}
+.cand{display:flex;align-items:center;gap:2px}
+.cand .cand-chip{flex:1;min-width:0;cursor:default;background:transparent;border-style:dashed;font-weight:500}
+.ibtn.ok:hover{color:var(--new);background:var(--new-soft)}
+.ibtn.no:hover{color:var(--rel);background:var(--rel-soft)}
+.ibtn.add:hover{color:var(--new)}
+.slot.is-deciding{background:var(--gold-soft);border-color:var(--gold);border-style:dashed}
+.badge.dec{background:var(--gold-soft);color:var(--gold)}
+.openitem.dec{border-color:var(--gold);background:var(--gold-soft)}
+.openitem .dec-n{color:var(--gold)}
+.memsearch{width:100%;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+body.filling .slot:not(.current-view){border-color:var(--line);border-style:dashed}
+body.filling .mem .chip{border-color:var(--gold)}
+.lg-dec::before{background:var(--gold-soft);border:1px solid var(--gold)}
+body.blur .nm,body.blur .was s,body.blur .mem .sub{filter:blur(6px)}
+
+.add-c{display:block;width:calc(100% - 10px);margin:2px 5px 6px;border:1px dashed var(--line);background:transparent;border-radius:7px;padding:5px;color:var(--muted);font-size:.85rem}
+.add-org{break-inside:avoid;width:100%;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:14px;color:var(--muted)}
+
+.start{max-width:560px;margin:8vh auto;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px}
+.start h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:1.6rem;margin:0 0 8px;color:var(--navy)}
+.start p{color:var(--muted);margin:0 0 14px}
+
+/* Selection bar, toast, modal */
+#selbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--navy);color:var(--panel);border-radius:10px;padding:10px 12px 10px 16px;display:none;align-items:center;gap:12px;max-width:calc(100% - 24px);z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#selbar.on{display:flex}
+#selbar button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:7px;padding:4px 10px}
+#toast{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:360px}
+#toast.on{opacity:1}
+#modal{position:fixed;inset:0;background:rgba(10,15,25,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:40}
+#modal.on{display:flex}
+.dlg{background:var(--panel);border-radius:12px;width:min(640px,100%);max-height:88vh;overflow:auto;padding:22px}
+.dlg h3{font-family:Spectral,Georgia,serif;font-weight:600;font-size:1.3rem;margin:0 0 6px;color:var(--navy)}
+.dlg p,.dlg li{color:var(--muted);font-size:.9rem}
+.dlg textarea{width:100%;min-height:200px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);font-size:.85rem}
+.dlg input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.preview{font-size:.85rem;color:var(--new);background:var(--new-soft);border-radius:8px;padding:8px 10px;margin-top:8px}
+.preview:empty{display:none}
+.preview.warn{color:var(--rel);background:var(--rel-soft)}
+.warn-note{color:var(--rel);font-size:.8rem}
+.choices{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:46vh;overflow:auto}
+.choices .choice{text-align:left;padding:9px 12px}
+.choices .choice.alt{border-style:dashed;color:var(--muted)}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.dlg .tabs{margin:10px 0 12px}
+.summary h4{margin:12px 0 4px;font-size:.95rem}
+.summary ul{margin:0;padding-left:18px}
+.summary li{color:var(--ink)}
+.summary .r{color:var(--rel)}
+.summary .c{color:var(--new)}
+.summary .d{color:var(--gold)}
+
+@media (max-width:760px){
+  body{height:auto;min-height:100%}
+  main{grid-template-columns:1fr}
+  aside{border-right:0;border-bottom:1px solid var(--line);max-height:50vh}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1 class="brand">Calling Planner</h1>
+    <span class="revwrap">
+      <button class="rev" id="revTag" data-act="revPop" aria-expanded="false" title="What changed in this revision"></button>
+      <div class="revpop" id="revPop" hidden>
+        <h4>Revision history</h4>
+        <p id="revFull"></p>
+        <ul class="changelog">
+          <li><strong>Rev 12</strong> — member search, one-click fill from an open position, Open only view, and weighing several names per calling</li>
+          <li><strong>Rev 11</strong> — ungrouped callings sort below the group bands</li>
+          <li><strong>Rev 10</strong> — imports the LCR view that repeats a section label on every calling</li>
+          <li><strong>Rev 9</strong> — color bands for groups inside an organization</li>
+          <li><strong>Rev 8</strong> — remove a member without Edit layout; import skips column labels; this popover</li>
+          <li><strong>Rev 7</strong> — revision stamping</li>
+          <li><strong>Rev 6</strong> — Young Women classes group correctly on import</li>
+          <li><strong>Rev 5</strong> — move a calling between organizations</li>
+          <li><strong>Rev 4</strong> — import adds to the board instead of replacing it</li>
+          <li><strong>Rev 3</strong> — availability checkboxes and the help tab</li>
+          <li><strong>Rev 2</strong> — reads LCR's stacked calling list</li>
+          <li><strong>Rev 1</strong> — first version</li>
+        </ul>
+      </div>
+    </span>
+    <input id="q" class="search" type="search" placeholder="Search names or callings" aria-label="Search names or callings">
+    <div class="seg" role="group" aria-label="Board view">
+      <button id="vDraft" data-act="view" data-v="draft">Draft</button>
+      <button id="vCur" data-act="view" data-v="current">Current</button>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn" data-act="undo" id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+    <button class="btn" data-act="blur" id="blurBtn" title="Blur names on screen (H)">Hide names</button>
+    <button class="btn" data-act="summary">Summary</button>
+    <button class="btn" data-act="import">Import</button>
+    <button class="btn" data-act="export">Save backup</button>
+  </div>
+  <div class="row">
+    <div class="chips" id="orgChips" aria-label="Show organizations"></div>
+    <label class="toggle"><input type="checkbox" id="chgOnly"> Changes only</label>
+    <label class="toggle"><input type="checkbox" id="compact"> Compact</label>
+    <label class="toggle"><input type="checkbox" id="openOnly"> Open only</label>
+    <button class="btn" data-act="edit" id="editBtn">Edit layout</button>
+  </div>
+</header>
+
+<main>
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabAvail" data-act="tab" data-t="avail">Members <span class="count" id="cAvail"></span></button>
+      <button role="tab" id="tabOpen" data-act="tab" data-t="open">Open <span class="count" id="cOpen"></span></button>
+      <button role="tab" id="tabHelp" data-act="tab" data-t="help">How to use</button>
+    </div>
+    <div class="pane" id="paneAvail">
+      <div class="pane-tools">
+        <input id="memq" class="memsearch" type="search" placeholder="Search member names" aria-label="Search member names">
+      </div>
+      <div class="pane-tools">
+        <select id="benchFilter" aria-label="Which members to show">
+          <option value="none">Without a calling</option>
+          <option value="releasing">Being released</option>
+          <option value="one">Holding one calling</option>
+          <option value="multi">Holding two or more</option>
+          <option value="all">Everyone</option>
+        </select>
+      </div>
+      <div class="pane-tools avail-row">
+        <label class="toggle"><input type="checkbox" id="availOnly"> Available only</label>
+        <span id="availCount" class="count"></span>
+        <span class="availbtns">
+          <button class="ibtn" data-act="availAll" title="Mark everyone shown as available">Mark shown</button>
+          <button class="ibtn" data-act="availNone" title="Unmark everyone shown">Clear</button>
+        </span>
+      </div>
+      <div id="benchZone">
+        <div class="zonehint">Drop here to unassign from that calling</div>
+        <div id="benchList"></div>
+      </div>
+      <form class="addform" id="addMember">
+        <input id="newMember" placeholder="Add a member (Last, First)" aria-label="Add a member">
+        <button class="btn" type="submit">Add</button>
+      </form>
+    </div>
+    <div class="pane" id="paneOpen" hidden>
+      <div id="openList"></div>
+    </div>
+    <div class="pane help" id="paneHelp" hidden>
+      <h3>Getting your list in</h3>
+      <p>Use <strong>List view</strong> in LCR. It prints the section name above every calling, which is what lets the board build your organizations and color-banded groups without any hand sorting. Select the list, copy it, and paste it into <strong>Import → Calling list</strong>. A preview tells you what it found before you commit.</p>
+      <p>Other LCR layouts import too, just with less structure — you may need <strong>Edit layout</strong> afterward to tidy the columns. Paste a membership list under <strong>Member list</strong> to add people who hold no calling yet.</p>
+
+      <h3>Marking who's available</h3>
+      <p>Tick the box next to anyone the bishopric would consider right now. <strong>Mark shown</strong> ticks everyone currently listed, and <strong>Clear</strong> unticks them. Turn on <strong>Available only</strong> to narrow the list to those people while you work.</p>
+      <p>To drop someone from the list, hover their row and click the <strong>✕</strong> on the right. Useful for stray entries an import picked up by mistake.</p>
+
+      <h3>Moving people</h3>
+      <ul>
+        <li>Drag a name onto a calling, or click the name and then click the calling. Clicking is easier when you're driving a projector.</li>
+        <li>Dragging someone out of one calling and onto another swaps the two.</li>
+        <li>Drag a name back to this list to leave their calling open.</li>
+        <li><strong>✕</strong> unassigns, <strong>↺</strong> restores the current person, and <strong>Undo</strong> (Ctrl+Z) reverses the last move.</li>
+      </ul>
+
+      <h3>Weighing several names</h3>
+      <p>When more than one person could fill a calling, put them all on it and decide later. Drop a second name from this list onto a calling that already has someone and both become candidates; keep dropping to add more. The calling turns amber and reads "Considering 3".</p>
+      <p>Each candidate gets a <strong>✓</strong> to call them, which clears the others in one click, and an <strong>✕</strong> to take just that person off. The <strong>+</strong> on any calling starts the same thing from the member list. Nothing is settled until you click a ✓, so the Summary lists these apart as "Still deciding".</p>
+
+      <h3>Finding people fast</h3>
+      <p>The box above the member list searches names only; the one in the top bar searches the board. Click an <strong>Open</strong> position, either on the board or in the Open tab, and it jumps to that calling and drops the cursor into the member search — type a few letters, click the name, done. <strong>Open only</strong> at the top hides every calling that already has someone, which is the quickest way to work down what's left.</p>
+
+      <h3>Reading the board</h3>
+      <ul>
+        <li>Green means a proposed call.</li>
+        <li>Red struck-through means someone is being released.</li>
+        <li>Amber with a dashed edge means names are still being weighed.</li>
+        <li>A red dashed outline means the position is open.</li>
+        <li>Each organization header counts its open, deciding, and changed callings.</li>
+      </ul>
+
+      <h3>Fitting it on screen</h3>
+      <p>Use the organization chips along the top to show or hide groups, <strong>▾</strong> to collapse one, <strong>Changes only</strong> to see just the moves, <strong>Open only</strong> for just the gaps, <strong>Compact</strong> to fit more, and the top search to find a person or calling.</p>
+
+      <h3>Finishing a meeting</h3>
+      <p><strong>Draft</strong> and <strong>Current</strong> switch between what you're proposing and what's in place today. <strong>Summary</strong> lists every release and call by organization and can copy them as text. After calls are extended and recorded in LCR, use <strong>Mark all as done</strong> inside Summary so the draft becomes the new current list.</p>
+
+      <h3>Keeping it private</h3>
+      <p>Everything stays in this browser on this computer. Nothing is uploaded. <strong>Hide names</strong> (or the H key) blurs every name instantly if someone walks in. <strong>Save backup</strong> writes a file that does contain names, so store it somewhere private, and use <strong>Clear everything</strong> in Import when the laptop is no longer the right place for it.</p>
+
+      <h3>Groups inside a column</h3>
+      <p>A long organization can be split into color-banded groups — a presidency, the classes, the teachers. A List view import builds these from LCR's own section names; other pastes fall back to headings, then to the calling names.</p>
+      <p>In <strong>Edit layout</strong>, a band header gains <strong>✎</strong> to rename the group, <strong>◑</strong> to step through seven colors, and <strong>✕</strong> to remove the banding while keeping the callings. To put one calling in a different group, use its <strong>⇄</strong> button and pick the organization, then the group. Callings with no group collect at the bottom of the column, below the bands.</p>
+
+      <h3>Fixing the layout</h3>
+      <p>Turn on <strong>Edit layout</strong> and each calling gets three buttons: <strong>✎</strong> renames it, <strong>⇄</strong> moves it to another organization, and <strong>🗑</strong> deletes it. Organization headers gain rename, reorder, and delete. Moving a calling keeps whoever is in it, so use <strong>⇄</strong> when the import files something under the wrong group — anything it can't place lands in Other Callings.</p>
+
+      <h3>Which version is this</h3>
+      <p>Click the revision pill in the top left for the history of what changed. The number is also stamped into backup filenames and copied summaries, so you can tell which build someone is running.</p>
+    </div>
+    <div class="legend">
+      <span class="lg-new">Proposed call</span><span class="lg-rel">Releasing</span><span class="lg-dec">Deciding</span><span class="lg-open">Open</span>
+    </div>
+  </aside>
+  <section class="board" id="board" aria-label="Callings board"></section>
+</main>
+
+<div id="selbar" role="status"><span id="selText"></span><button data-act="cancelSel">Cancel</button></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="modal" role="dialog" aria-modal="true"><div class="dlg" id="dlg"></div></div>
+
+<script>
+(function(){
+const REV='12',REV_DATE='11 Oct 2026';
+const KEY='callingPlanner.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const svg=(d,extra)=>`<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${extra||''}<path d="${d}"/></svg>`;
+const ICO={
+  pencil:svg('M11.4 2.6l2 2L6 12l-2.6.6L4 10z'),
+  swap:svg('M2.5 5.5h9M9.2 3l2.6 2.5-2.6 2.5M13.5 10.5h-9M6.8 8l-2.6 2.5L6.8 13'),
+  color:'<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.6a5.4 5.4 0 010 10.8z" fill="currentColor"/></svg>',
+  trash:svg('M3 4.4h10M6.4 4.4V2.9h3.2v1.5M4.6 4.4l.5 8.2h5.8l.5-8.2'),
+  x:svg('M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6'),
+  undo:svg('M3.2 7.2A5 5 0 118 13.2M3.2 3.6v3.6h3.6'),
+  check:svg('M3.4 8.4l3.2 3.2 6-6.8'),
+  plus:svg('M8 3.4v9.2M3.4 8h9.2')
+};
+const blank=()=>({orgs:[],callings:[],members:[],hidden:[],groupColors:{}});
+const NG=7;
+
+function load(){try{const r=localStorage.getItem(KEY);if(!r)return null;const d=JSON.parse(r);return valid(d)?norm(d):null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function valid(d){return d&&Array.isArray(d.orgs)&&Array.isArray(d.callings)&&Array.isArray(d.members)}
+function norm(d){return{orgs:d.orgs,callings:d.callings.map(c=>({...c,group:c.group||'',cands:Array.isArray(c.cands)?c.cands.filter(Boolean):[],current:c.current||null,proposed:c.proposed===undefined?(c.current||null):(c.proposed||null)})),members:d.members.map(m=>({...m,avail:!!m.avail})),hidden:Array.isArray(d.hidden)?d.hidden:[],groupColors:(d.groupColors&&typeof d.groupColors==='object')?d.groupColors:{}}}
+
+let S=load()||blank();
+let undoStack=[];
+let sel=null;      // {mid, from}
+let drag=null;     // {mid, from}
+const ui={q:'',memq:'',tab:'avail',bench:'none',availOnly:false,view:'draft',changesOnly:false,openOnly:false,compact:false,blur:false,edit:false};
+let fill=null; // {cid, mode:'place'|'consider'}
+
+let downloads=null;
+(async()=>{try{if(window.claude&&typeof window.claude.use==='function'){downloads=await window.claude.use('downloads')}}catch(e){downloads=null}})();
+
+const C=id=>S.callings.find(c=>c.id===id);
+const O=id=>S.orgs.find(o=>o.id===id);
+const M=id=>S.members.find(m=>m.id===id);
+const nm=id=>{const m=id&&M(id);return m?m.name:''};
+const changed=c=>(c.proposed||null)!==(c.current||null);
+const cands=c=>Array.isArray(c.cands)?c.cands:[];
+const deciding=c=>!c.proposed&&cands(c).length>0;
+const isOpen=c=>!c.proposed&&cands(c).length===0;
+function mapBy(field){const m={};for(const c of S.callings){const v=c[field];if(v)(m[v]=m[v]||[]).push(c)}return m}
+
+function commit(fn,msg){undoStack.push(JSON.stringify(S));if(undoStack.length>150)undoStack.shift();fn();save();render();if(msg)toast(msg)}
+function undo(){if(!undoStack.length){toast('Nothing to undo');return}S=JSON.parse(undoStack.pop());save();render();toast('Undone')}
+
+function setRevPop(on){const p=$('#revPop');if(!p)return;p.hidden=!on;$('#revTag').setAttribute('aria-expanded',on?'true':'false')}
+
+let tt;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2600)}
+
+/* ---------- Moves ---------- */
+function addCand(cid,mid){
+  const t=C(cid);if(!t||!mid)return;
+  const set=cands(t).length?cands(t).slice():(t.proposed?[t.proposed]:[]);
+  if(set.indexOf(mid)>=0){toast(`${nm(mid)} is already on the list for ${t.title}`);return}
+  const next=set.concat(mid);
+  commit(()=>{t.cands=next;t.proposed=null},`${nm(mid)} added — ${next.length} being considered for ${t.title}`);
+}
+function chooseCand(cid,mid){
+  const c=C(cid);if(!c)return;
+  commit(()=>{c.proposed=mid;c.cands=[]},`${nm(mid)} chosen for ${c.title}`);
+}
+function dropCand(cid,mid){
+  const c=C(cid);if(!c)return;
+  commit(()=>{c.cands=cands(c).filter(x=>x!==mid)},`${nm(mid)} taken off the list for ${c.title}`);
+}
+
+function place(mid,from,to){
+  if(!mid||from===to)return;
+  const t=C(to);if(!t)return;
+  const prev=t.proposed;
+  const list=cands(t);
+  if(prev===mid&&!from&&!list.length)return;
+  // Already weighing names here, or a second name dropped on a filled calling: consider rather than replace.
+  if(list.length||(!from&&prev&&prev!==mid)){
+    const set=list.length?list.slice():[prev];
+    if(set.indexOf(mid)>=0){toast(`${nm(mid)} is already on the list for ${t.title}`);return}
+    const next=set.concat(mid);
+    commit(()=>{
+      if(from){const f=C(from);if(f&&f.proposed===mid)f.proposed=null}
+      t.cands=next;t.proposed=null;
+    },`${nm(mid)} added — ${next.length} being considered for ${t.title}`);
+    return;
+  }
+  const who=nm(mid);
+  let msg;
+  if(from&&prev&&prev!==mid)msg=`Swapped ${who} and ${nm(prev)}`;
+  else if(prev&&prev!==mid)msg=`${who} placed as ${t.title}. ${nm(prev)} is unassigned from it.`;
+  else msg=`${who} placed as ${t.title}`;
+  commit(()=>{
+    if(from){const f=C(from);if(f)f.proposed=(prev&&prev!==mid)?prev:null}
+    t.proposed=mid;
+  },msg);
+}
+function release(cid){const c=C(cid);if(!c||!c.proposed)return;const who=nm(c.proposed);commit(()=>{c.proposed=null},`${who} unassigned from ${c.title}`)}
+function revert(cid){const c=C(cid);if(!c)return;commit(()=>{c.proposed=c.current},`${c.title} back to current`)}
+
+/* ---------- Rendering ---------- */
+function render(){
+  const b=document.body.classList;
+  b.toggle('compact',ui.compact);b.toggle('blur',ui.blur);b.toggle('edit',ui.edit);
+  b.toggle('picking',!!sel);b.toggle('picking-slot',!!(sel&&sel.from));
+  $('#vDraft').setAttribute('aria-pressed',ui.view==='draft');
+  $('#vCur').setAttribute('aria-pressed',ui.view==='current');
+  $('#blurBtn').setAttribute('aria-pressed',ui.blur);
+  $('#blurBtn').textContent=ui.blur?'Show names':'Hide names';
+  $('#editBtn').setAttribute('aria-pressed',ui.edit);
+  $('#editBtn').textContent=ui.edit?'Done editing':'Edit layout';
+  $('#chgOnly').checked=ui.changesOnly;$('#compact').checked=ui.compact;$('#openOnly').checked=ui.openOnly;
+  $('#benchFilter').value=ui.bench;$('#availOnly').checked=ui.availOnly;
+  b.toggle('filling',!!fill);
+  $('#tabAvail').setAttribute('aria-selected',ui.tab==='avail');
+  $('#tabOpen').setAttribute('aria-selected',ui.tab==='open');
+  $('#tabHelp').setAttribute('aria-selected',ui.tab==='help');
+  $('#paneAvail').hidden=ui.tab!=='avail';$('#paneOpen').hidden=ui.tab!=='open';$('#paneHelp').hidden=ui.tab!=='help';
+  renderChips();renderBench();renderOpen();renderBoard();renderSel();
+}
+
+function renderChips(){
+  if(!S.orgs.length){$('#orgChips').innerHTML='';return}
+  const allOn=!S.hidden.length;
+  let h=`<button class="ochip" data-act="allOrgs" aria-pressed="${allOn}">All</button>`;
+  for(const o of S.orgs){
+    const open=S.callings.filter(c=>c.orgId===o.id&&!c.proposed).length;
+    h+=`<button class="ochip" data-act="toggleOrg" data-oid="${o.id}" aria-pressed="${!S.hidden.includes(o.id)}">${esc(o.name)}${open?`<span class="n">${open}</span>`:''}</button>`;
+
+  }
+  $('#orgChips').innerHTML=h;
+}
+
+function benchMembers(){
+  const dm=mapBy('proposed'),cm=mapBy('current'),q=ui.memq.toLowerCase();
+  let ms=S.members.slice();
+  const n=m=>(dm[m.id]||[]).length;
+  if(ui.bench==='none')ms=ms.filter(m=>n(m)===0);
+  else if(ui.bench==='one')ms=ms.filter(m=>n(m)===1);
+  else if(ui.bench==='multi')ms=ms.filter(m=>n(m)>=2);
+  else if(ui.bench==='releasing')ms=ms.filter(m=>(cm[m.id]||[]).some(c=>c.proposed!==m.id));
+  if(ui.availOnly)ms=ms.filter(m=>m.avail);
+  if(q)ms=ms.filter(m=>m.name.toLowerCase().includes(q));
+  ms.sort((a,b)=>a.name.localeCompare(b.name));
+  return{ms,dm,cm};
+}
+
+function renderBench(){
+  const {ms,dm,cm}=benchMembers();
+  $('#cAvail').textContent=`(${ms.length})`;
+  const nAvail=S.members.filter(m=>m.avail).length;
+  $('#availCount').textContent=nAvail?`(${nAvail} marked)`:'';
+  if(!S.members.length){$('#benchList').innerHTML='<div class="empty-note">No members yet. Import a calling list or member list, or add names below.</div>';return}
+  if(!ms.length){$('#benchList').innerHTML='<div class="empty-note">No one matches this filter.</div>';return}
+  $('#benchList').innerHTML=ms.map(m=>{
+    const holds=(dm[m.id]||[]).map(c=>c.title);
+    const leaving=(cm[m.id]||[]).filter(c=>c.proposed!==m.id).map(c=>c.title);
+    const isSel=sel&&sel.mid===m.id&&!sel.from;
+    let sub=holds.length?esc(holds.join(', ')):'No calling';
+    return `<div class="mem${m.avail?' is-avail':''}">
+      <input type="checkbox" class="availbox" data-mid="${m.id}" ${m.avail?'checked':''} title="Available for a calling" aria-label="Available for a calling: ${esc(m.name)}">
+      <button class="chip${isSel?' sel':''}" draggable="${ui.view==='draft'}" data-act="pick" data-mid="${m.id}" data-from=""><span class="nm">${esc(m.name)}</span></button>
+      <button class="ibtn memdel" data-act="delMember" data-mid="${m.id}" title="Remove from the member list" aria-label="Remove ${esc(m.name)}">✕</button>
+      <div class="sub">${sub}</div>
+      ${leaving.length?`<div class="sub rel">Releasing from ${esc(leaving.join(', '))}</div>`:''}
+    </div>`}).join('');
+}
+
+function renderOpen(){
+  const list=S.callings.filter(c=>!c.proposed);
+  $('#cOpen').textContent=`(${list.length})`;
+  if(!list.length){$('#openList').innerHTML='<div class="empty-note">Every calling has someone in the draft.</div>';return}
+  const order=S.orgs.map(o=>o.id);
+  list.sort((a,b)=>(deciding(a)?1:0)-(deciding(b)?1:0)||order.indexOf(a.orgId)-order.indexOf(b.orgId));
+  $('#openList').innerHTML='<div class="empty-note">Click one to search the member list for someone to fill it.</div>'+list.map(c=>`<button class="openitem${deciding(c)?' dec':''}" data-act="fillC" data-cid="${c.id}" data-mode="${deciding(c)?'consider':'place'}">
+    <div><strong>${esc(c.title)}</strong></div>
+    <div class="org-n">${esc((O(c.orgId)||{}).name)}${c.group?' · '+esc(c.group):''}</div>
+    ${deciding(c)?`<div class="was dec-n">Considering <span class="nm">${esc(cands(c).map(nm).join(', '))}</span></div>`:''}
+    ${c.current?`<div class="was"><s class="nm">${esc(nm(c.current))}</s> would be released</div>`:''}
+  </button>`).join('');
+}
+
+function slotHTML(c){
+  const cur=ui.view==='current';
+  const pid=cur?c.current:c.proposed;
+  let who;
+  if(pid){
+    const isNew=!cur&&changed(c);
+    const isSel=sel&&sel.from===c.id;
+    who=`<button class="chip${isNew?' new':''}${isSel?' sel':''}${cur?' static':''}" ${cur?'':`draggable="true" data-act="pick" data-mid="${pid}" data-from="${c.id}"`}><span class="nm">${esc(nm(pid))}</span></button>`;
+  }else if(!cur&&cands(c).length){
+    who=`<div class="candlist"><div class="candhead">Considering ${cands(c).length}</div>${cands(c).map(mid=>`<div class="cand">
+      <span class="chip cand-chip"><span class="nm">${esc(nm(mid))}</span></span>
+      <button class="ibtn ok" data-act="chooseC" data-cid="${c.id}" data-mid="${mid}" title="Call ${esc(nm(mid))} to this calling" aria-label="Choose ${esc(nm(mid))}">${ICO.check}</button>
+      <button class="ibtn no" data-act="dropC" data-cid="${c.id}" data-mid="${mid}" title="Take off the list" aria-label="Remove ${esc(nm(mid))} from consideration">${ICO.x}</button>
+    </div>`).join('')}</div>`;
+  }else{
+    who=cur?'<span class="vacant plain">Vacant</span>':`<button class="vacant openbtn" data-act="fillC" data-cid="${c.id}" data-mode="place" title="Search the member list for someone to fill this">Open</button>`;
+  }
+  let acts='';
+  if(!cur){
+    acts+=`<button class="ibtn add" data-act="fillC" data-cid="${c.id}" data-mode="consider" title="Add someone to consider for this calling" aria-label="Add a name to consider for ${esc(c.title)}">${ICO.plus}</button>`;
+    if(c.proposed)acts+=`<button class="ibtn" data-act="release" data-cid="${c.id}" title="Unassign" aria-label="Unassign ${esc(c.title)}">${ICO.x}</button>`;
+    if(changed(c))acts+=`<button class="ibtn" data-act="revert" data-cid="${c.id}" title="Back to current" aria-label="Back to current">${ICO.undo}</button>`;
+  }
+  if(ui.edit){
+    acts+=`<button class="ibtn" data-act="renameC" data-cid="${c.id}" title="Rename this calling" aria-label="Rename ${esc(c.title)}">${ICO.pencil}</button><button class="ibtn" data-act="moveC" data-cid="${c.id}" title="Move to another organization or group" aria-label="Move ${esc(c.title)}">${ICO.swap}</button><button class="ibtn" data-act="delC" data-cid="${c.id}" title="Delete this calling" aria-label="Delete ${esc(c.title)}">${ICO.trash}</button>`;
+  }
+  const was=(!cur&&c.current&&c.current!==c.proposed)?`<div class="was">${deciding(c)?'Now':'Releasing'} <s class="nm">${esc(nm(c.current))}</s></div>`:'';
+  return `<div class="slot${cur?' current-view':''}${!cur&&deciding(c)?' is-deciding':''}" data-cid="${c.id}">
+    <div class="t">${esc(c.title)}</div>
+    <div class="acts">${acts}</div>
+    <div class="who">${who}</div>${was}
+  </div>`;
+}
+
+function orgGroups(oid){const out=[];for(const c of S.callings){if(c.orgId!==oid)continue;const g=c.group||'';if(g&&out.indexOf(g)<0)out.push(g)}return out}
+function groupClass(oid,g){const k=oid+'::'+g,o=S.groupColors||{};if(o[k]!=null)return 'g'+(((o[k]%NG)+NG)%NG);const i=orgGroups(oid).indexOf(g);return 'g'+((i<0?0:i)%NG)}
+function slotsHTML(oid,list){
+  const order=orgGroups(oid);
+  const cs=list.slice().sort((a,b)=>{const ga=a.group||'',gb=b.group||'';if(ga===gb)return 0;if(!ga)return 1;if(!gb)return -1;return order.indexOf(ga)-order.indexOf(gb)});
+  let h='',cur=null,open=false;
+  for(const c of cs){
+    const g=c.group||'';
+    if(g!==cur){
+      if(open){h+='</div></div>';open=false}
+      cur=g;
+      if(g){
+        const n=cs.filter(x=>(x.group||'')===g).length;
+        h+=`<div class="band ${groupClass(oid,g)}"><div class="band-h"><span class="band-name">${esc(g)}</span><span class="band-n">${n}</span>${ui.edit?`<span class="band-acts"><button class="ibtn" data-act="renameG" data-oid="${oid}" data-g="${esc(g)}" title="Rename this group" aria-label="Rename group ${esc(g)}">${ICO.pencil}</button><button class="ibtn" data-act="colorG" data-oid="${oid}" data-g="${esc(g)}" title="Next band color" aria-label="Change color of group ${esc(g)}">${ICO.color}</button><button class="ibtn" data-act="ungroupG" data-oid="${oid}" data-g="${esc(g)}" title="Remove this grouping" aria-label="Remove group ${esc(g)}">${ICO.x}</button></span>`:''}</div><div class="band-slots">`;
+        open=true;
+      }
+    }
+    h+=slotHTML(c);
+  }
+  if(open)h+='</div></div>';
+  return h;
+}
+
+function renderBoard(){
+  const board=$('#board');
+  if(!S.orgs.length){
+    board.innerHTML=`<div class="start">
+      <h2>Start with your ward's callings</h2>
+      <p>Copy your callings out of LCR's List view and paste them in, then drag members between callings to try out changes. Nothing is sent anywhere. Everything stays in this browser on this computer.</p>
+      <div class="row"><button class="btn primary" data-act="import">Import callings</button><button class="btn" data-act="sample">Try it with a sample ward</button></div>
+    </div>`;return;
+  }
+  const q=ui.q.toLowerCase();
+  let h='<div class="cols">';let shown=0;
+  for(const o of S.orgs){
+    if(S.hidden.includes(o.id))continue;
+    const all=S.callings.filter(c=>c.orgId===o.id);
+    let cs=all;
+    if(ui.changesOnly)cs=cs.filter(changed);
+    if(ui.openOnly)cs=cs.filter(c=>!c.proposed);
+    if(q&&!o.name.toLowerCase().includes(q))cs=cs.filter(c=>c.title.toLowerCase().includes(q)||nm(c.proposed).toLowerCase().includes(q)||nm(c.current).toLowerCase().includes(q)||cands(c).some(m=>nm(m).toLowerCase().includes(q)));
+    if(!cs.length&&(q||ui.changesOnly||ui.openOnly)&&!ui.edit)continue;
+    shown++;
+    const openN=all.filter(isOpen).length,decN=all.filter(deciding).length,chN=all.filter(changed).length;
+    h+=`<section class="org${o.collapsed?' collapsed':''}" data-oid="${o.id}">
+      <div class="org-h">
+        <h2>${esc(o.name)}</h2>
+        ${!ui.edit&&openN?`<span class="badge open" title="Open positions">${openN} open</span>`:''}
+        ${!ui.edit&&decN?`<span class="badge dec" title="Callings with names under consideration">${decN} deciding</span>`:''}
+        ${!ui.edit&&chN?`<span class="badge ch" title="Changes in draft">${chN} change${chN>1?'s':''}</span>`:''}
+        ${ui.edit?`<button class="ibtn" data-act="renameOrg" data-oid="${o.id}" title="Rename organization" aria-label="Rename ${esc(o.name)}">${ICO.pencil}</button><button class="ibtn" data-act="moveOrg" data-dir="-1" data-oid="${o.id}" title="Move earlier" aria-label="Move ${esc(o.name)} earlier">◀</button><button class="ibtn" data-act="moveOrg" data-dir="1" data-oid="${o.id}" title="Move later" aria-label="Move ${esc(o.name)} later">▶</button><button class="ibtn" data-act="delOrg" data-oid="${o.id}" title="Delete organization" aria-label="Delete ${esc(o.name)}">${ICO.trash}</button>`:''}
+        <button class="ibtn" data-act="collapse" data-oid="${o.id}" aria-expanded="${!o.collapsed}" aria-label="${o.collapsed?'Expand':'Collapse'} ${esc(o.name)}">${o.collapsed?'▸':'▾'}</button>
+      </div>
+      ${o.collapsed?'':`<div class="slots">${slotsHTML(o.id,cs)}${ui.edit?`<button class="add-c" data-act="addC" data-oid="${o.id}">Add a calling</button>`:''}</div>`}
+    </section>`;
+  }
+  if(ui.edit)h+=`<button class="add-org" data-act="addOrg">Add an organization</button>`;
+  h+='</div>';
+  if(!shown&&!ui.edit)h=`<div class="empty-note" style="padding:20px">Nothing matches. Clear the search, turn off "Changes only", or show more organizations.</div>`;
+  board.innerHTML=h;
+}
+
+function renderSel(){
+  const bar=$('#selbar');
+  const cancel='<button data-act="cancelSel">Cancel</button>';
+  if(fill){
+    const c=C(fill.cid);
+    if(!c){fill=null;bar.classList.remove('on');return}
+    bar.innerHTML=`<span>${fill.mode==='consider'?'Adding someone to consider for':'Filling'} <strong>${esc(c.title)}</strong>. Search above, then click a name.</span>${cancel}`;
+    bar.classList.add('on');return;
+  }
+  if(!sel){bar.classList.remove('on');return}
+  const from=sel.from?C(sel.from):null;
+  bar.innerHTML=`<span>Placing <strong class="nm">${esc(nm(sel.mid))}</strong>${from?` from ${esc(from.title)}`:''}. Click a calling or open position${from?', or the member list to unassign':''}.</span>${cancel}`;
+  bar.classList.add('on');
+}
+
+/* ---------- Modal ---------- */
+let modalResolve=null;
+function openModal(html){$('#dlg').innerHTML=html;$('#modal').classList.add('on');const f=$('#dlg').querySelector('textarea,input,button.primary');if(f)f.focus()}
+function closeModal(v){$('#modal').classList.remove('on');$('#dlg').innerHTML='';if(modalResolve){const r=modalResolve;modalResolve=null;r(v)}}
+function askText(title,value,label){return new Promise(res=>{modalResolve=res;openModal(`<h3>${esc(title)}</h3><form id="askForm"><input type="text" id="askIn" value="${esc(value||'')}" aria-label="${esc(label||title)}"><div class="acts"><button type="button" class="btn" data-act="modalCancel">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`);const i=$('#askIn');i.select()})}
+function askConfirm(title,body,yes,danger){return new Promise(res=>{modalResolve=res;openModal(`<h3>${esc(title)}</h3><p>${esc(body)}</p><div class="acts"><button class="btn" data-act="modalCancel">Cancel</button><button class="btn ${danger?'danger':'primary'}" data-act="modalYes">${esc(yes)}</button></div>`)})}
+function askChoice(title,body,opts){return new Promise(res=>{modalResolve=res;openModal(`<h3>${esc(title)}</h3>${body?`<p>${esc(body)}</p>`:''}<div class="choices">${opts.map(o=>`<button class="btn choice${o.alt?' alt':''}" data-act="modalPick" data-v="${esc(o.value)}">${esc(o.label)}</button>`).join('')}</div><div class="acts"><button class="btn" data-act="modalCancel">Cancel</button></div>`)})}
+
+let importTab='callings';
+function showImport(){
+  const help={
+    callings:`<p><strong>List view in LCR gives the best result.</strong> It repeats the section — Presidency, Teachers, Gospel Doctrine — on every calling, so organizations and color-banded groups come across on their own. Switch LCR to List view, select the callings, copy, and paste below.</p>
+      <p>Other layouts still work: the stacked form with the calling, name, and sustained date on their own lines, pasted tables, headings above their callings, and typed rows like <code>Primary Pianist | Smith, Jane</code>. "Calling Vacant" becomes an open position. Importing adds to what's on the board, so pasting the same list twice gives you each calling twice.</p>`,
+    members:`<p>Paste one name per line, for example from an LCR member list. Names already on the board are skipped. These people show up under Members so you can consider them for callings.</p>`,
+    backup:`<p>Open a backup file you saved earlier with Save backup. This replaces everything currently on the board.</p>`
+  }[importTab];
+  const body=importTab==='backup'
+    ?`<input type="file" id="fileIn" accept=".json,application/json" aria-label="Backup file">`
+    :`<textarea id="pasteIn" placeholder="${importTab==='callings'?'Bishopric&#10;Bishop&#10;Hansen, David&#10;16 Jul 2023&#10;&#10;Bishopric&#10;Ward Clerk&#10;Nguyen, Peter&#10;14 Apr 2024&#10;&#10;Primary Presidency&#10;Primary Secretary&#10;Calling Vacant':'Adams, Jordan&#10;Baker, Chloe'}"></textarea>
+      ${importTab==='callings'?`<div class="preview" id="impPreview"></div><p><label><input type="radio" name="mode" value="add" checked> Add to the board</label> &nbsp; <label><input type="radio" name="mode" value="replace"> Replace the board <span class="warn-note">clears what's there now</span></label></p>`:''}`;
+  openModal(`<h3>Import</h3>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-act="impTab" data-t="callings" aria-selected="${importTab==='callings'}">Calling list</button>
+      <button role="tab" data-act="impTab" data-t="members" aria-selected="${importTab==='members'}">Member list</button>
+      <button role="tab" data-act="impTab" data-t="backup" aria-selected="${importTab==='backup'}">Backup file</button>
+    </div>
+    ${help}${body}
+    <div class="acts">
+      ${S.orgs.length||S.members.length?'<button class="btn danger" data-act="clearAll">Clear everything</button><span class="spacer"></span>':''}
+      <button class="btn" data-act="modalCancel">Cancel</button>
+      ${importTab==='backup'?'':'<button class="btn primary" data-act="doImport">Import</button>'}
+    </div>`);
+}
+
+const MON='jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+function isDate(s){
+  const t=String(s||'').trim();
+  if(!t)return false;
+  return new RegExp(`^\\d{1,2}\\s+(${MON})[a-z]*\\.?,?\\s+(19|20)\\d{2}$`,'i').test(t)
+    ||new RegExp(`^(${MON})[a-z]*\\.?\\s+\\d{1,2},?\\s+(19|20)\\d{2}$`,'i').test(t)
+    ||/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(t)
+    ||/^(19|20)\d{2}[\/.-]\d{1,2}[\/.-]\d{1,2}$/.test(t)
+    ||/^(19|20)\d{2}$/.test(t);
+}
+const vacantRx=/^(calling\s+)?(vacant|not\s+filled|unfilled|open|none|n\/a)$|^-+$/i;
+const isVacant=s=>vacantRx.test(String(s||'').trim());
+const isCommaName=s=>/^[^,]{1,60},\s*\S/.test(s)&&!isDate(s);
+const KNOWN_ORGS=['bishopric','branch presidency','stake','ward council','clerks and secretaries','elders quorum','relief society','young women','young men','aaronic priesthood','aaronic priesthood quorums','primary','nursery','sunday school','music','activities','ward missionaries','full-time missionaries','missionary','temple and family history','family history','welfare and self-reliance','self-reliance','seminary and institute','other callings','other','ward organizations'];
+const cleanHead=s=>s.replace(/\s*\(\d+\)\s*$/,'').replace(/:$/,'').trim();
+function isMainOrg(s){return KNOWN_ORGS.includes(cleanHead(s).toLowerCase())}
+function isSubHead(s){const t=cleanHead(s);return !t.includes(',')&&t.split(/\s+/).length<=6&&/\b(presidency|quorum|auxiliary|committee|council|class|organizations?)$/i.test(t)}
+function isKnownOrg(s){return isMainOrg(s)||isSubHead(s)}
+function inferGroup(title){
+  const t=String(title||'').toLowerCase();
+  if(/\b(president|counselor)\b|^bishop$|^bishopric\b|branch president/.test(t))return 'Presidency';
+  if(/\b(secretary|clerk)\b/.test(t))return 'Secretaries and clerks';
+  if(/\b(teacher|instructor)\b/.test(t))return 'Teachers';
+  if(/\b(advisor|adviser)\b/.test(t))return 'Advisors';
+  if(/\b(pianist|organist|chorister|choir)\b|music leader/.test(t))return 'Music';
+  if(/\b(specialist|coordinator|consultant)\b/.test(t))return 'Specialists';
+  return '';
+}
+const LABEL_RX=/^(sustained|date\s*sustained|set\s*apart|date\s*set\s*apart|date|name|calling|callings|position|organization|member|members|status|age|gender|phone|e-?mail|action|actions|edit|release|print|expand\s*all|collapse\s*all)$/i;
+function inferOrg(title){
+  const t=String(title||'').toLowerCase();
+  if(/^bishop$|^bishopric|ward (clerk|assistant clerk|executive secretary|assistant executive secretary)|^ward assistant clerk|^executive secretary|^assistant clerk/.test(t))return 'Bishopric and Clerks';
+  if(/branch president/.test(t))return 'Branch Presidency';
+  if(/elders quorum/.test(t))return 'Elders Quorum';
+  if(/relief society/.test(t))return 'Relief Society';
+  if(/young women|gatherers of light|messengers of hope|builders of faith|^yw /.test(t))return 'Young Women';
+  if(/young men|aaronic priesthood|deacons quorum|teachers quorum|priests quorum|^ym /.test(t))return 'Young Men';
+  if(/primary|nursery|sunbeam|\bctr\b|valiant/.test(t))return 'Primary';
+  if(/sunday school|gospel doctrine/.test(t))return 'Sunday School';
+  if(/mission/.test(t))return 'Missionary Work';
+  if(/temple|family history/.test(t))return 'Temple and Family History';
+  if(/music|organist|pianist|chorister|choir/.test(t))return 'Music';
+  if(/self-reliance|employment|welfare|addiction/.test(t))return 'Welfare and Self-Reliance';
+  if(/activit|camp|emergency|preparedness/.test(t))return 'Activities';
+  return '';
+}
+function labelOrg(l){
+  const t=String(l||'').toLowerCase();
+  if(!t)return '';
+  if(/aaronic priesthood|priests quorum|deacons quorum|teachers quorum|young men/.test(t))return 'Young Men';
+  if(/young women|gatherers of light|messengers of hope|builders of faith/.test(t))return 'Young Women';
+  if(/relief society/.test(t))return 'Relief Society';
+  if(/elders quorum/.test(t))return 'Elders Quorum';
+  if(/primary|nursery|valiant|sunbeam|\bctr\b/.test(t))return 'Primary';
+  if(/sunday school|gospel doctrine|come follow me|course\s*\d/.test(t))return 'Sunday School';
+  if(/bishopric|ward council/.test(t))return 'Bishopric and Clerks';
+  if(/missionar/.test(t))return 'Missionary Work';
+  if(/temple|family history/.test(t))return 'Temple and Family History';
+  if(/welfare|self-reliance/.test(t))return 'Welfare and Self-Reliance';
+  return '';
+}
+const VAC='\u0000V';
+function splitRecords(lines){
+  const recs=[];let cur=[];
+  for(const s of lines){
+    if(isDate(s)){if(cur.length){recs.push({lines:cur,term:'date'});cur=[]}continue}
+    if(isVacant(s)){cur.push(VAC);recs.push({lines:cur,term:'vacant'});cur=[];continue}
+    cur.push(s);
+  }
+  if(cur.length)recs.push({lines:cur,term:'none'});
+  return recs;
+}
+function recParts(r){
+  const L=r.lines.filter(s=>s!==VAC&&!/^custom calling$/i.test(s)&&!LABEL_RX.test(s));
+  if(!L.length)return null;
+  if(r.term==='vacant')return{label:L.length>=2?L[0]:'',title:L[L.length-1],name:''};
+  if(r.term!=='date')return null;
+  const name=L.length>=2?L[L.length-1]:'';
+  const rest=name?L.slice(0,-1):L;
+  if(!rest.length)return null;
+  return{label:rest.length>=2?rest[0]:'',title:rest[rest.length-1],name};
+}
+function looksLabeled(recs){
+  let lab=0,plain=0;
+  for(const r of recs){const p=recParts(r);if(!p)continue;if(p.label)lab++;else plain++}
+  return lab>=3&&lab>plain;
+}
+function parseLabeled(recs){
+  const items=[];
+  for(const r of recs){
+    const p=recParts(r);
+    if(!p||!p.title)continue;
+    items.push({label:p.label||'',title:p.title,name:p.name||'',org:labelOrg(p.label)||inferOrg(p.title)});
+  }
+  // A section's callings share one organization: fill blanks from the rest of the run,
+  // and when a whole run resolves to nothing, the section label becomes the organization.
+  for(let i=0;i<items.length;){
+    let j=i;while(j<items.length&&items[j].label===items[i].label)j++;
+    const found=items.slice(i,j).find(x=>x.org);
+    for(let k=i;k<j;k++){
+      if(!items[k].org){
+        if(found)items[k].org=found.org;
+        else{items[k].org=items[k].label||'Other Callings';items[k].promoted=!!items[k].label}
+      }
+    }
+    i=j;
+  }
+  return items.map(it=>{
+    const org=it.org||'Other Callings',label=it.label;
+    const ol=org.toLowerCase(),gl=label.toLowerCase();
+    let group;
+    if(!label||it.promoted||gl===ol)group='';
+    else if(ol.indexOf(gl)===0)group=inferGroup(it.title);
+    else if(gl.indexOf(ol+' ')===0)group=label.slice(org.length).trim();
+    else group=label;
+    return{org,group,title:it.title,name:it.name};
+  });
+}
+function splitCells(line){
+  if(line.includes('\t'))return line.split('\t').map(s=>s.trim()).filter(Boolean);
+  if(line.includes('|'))return line.split('|').map(s=>s.trim()).filter(Boolean);
+  return [line.trim()];
+}
+function parseCallings(text){
+  const flat=String(text||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(!flat.some(s=>splitCells(s).length>=2)){
+    const recs=splitRecords(flat);
+    if(looksLabeled(recs))return parseLabeled(recs);
+  }
+  const lines=[];
+  for(const raw of String(text||'').split(/\r?\n/)){
+    if(!raw.trim()){if(lines.length)lines[lines.length-1].gapAfter=true;continue}
+    lines.push({text:raw.trim(),cells:splitCells(raw),gapAfter:false});
+  }
+  lines.forEach((l,i)=>{l.gapBefore=i===0?true:!!lines[i-1].gapAfter});
+  const out=[];let org=null,grp='',pend=null;
+  const flush=()=>{
+    if(!pend)return;
+    if(!pend.sawName&&!pend.sawVacant&&!pend.sawDate){
+      if(org&&isSubHead(pend.title))grp=cleanHead(pend.title);
+      else{org=cleanHead(pend.title);grp=''}
+      pend=null;return;
+    }
+    out.push({org,group:grp,title:pend.title,name:pend.name||''});pend=null;
+  };
+  for(let i=0;i<lines.length;i++){
+    const L=lines[i],s=L.text;
+    const low=L.cells.join(' ').toLowerCase();
+    if(/^(position|calling|organization)\b/.test(low)&&/\bname\b/.test(low))continue;
+    if(L.cells.length>=2){ // one row per line, tab or pipe separated
+      flush();
+      let o=org,t,n;
+      const firstIsOrg=isKnownOrg(L.cells[0])||(org&&L.cells[0].toLowerCase()===org.toLowerCase());
+      if(L.cells.length>=3&&!isDate(L.cells[2])){o=L.cells[0];t=L.cells[1];n=L.cells[2]}
+      else if(L.cells.length===2&&firstIsOrg&&!isCommaName(L.cells[1])){o=L.cells[0];t=L.cells[1];n=''}
+      else{t=L.cells[0];n=L.cells[1]}
+      if(isDate(n)||isVacant(n))n='';
+      out.push({org:o,group:o===org?grp:'',title:t,name:n||''});
+      continue;
+    }
+    if(LABEL_RX.test(s))continue;
+    if(isDate(s)){if(pend)pend.sawDate=true;continue}
+    if(isVacant(s)){if(pend){pend.sawVacant=true;pend.name='';flush()}continue}
+    if(isMainOrg(s)){flush();org=cleanHead(s);grp='';pend=null;continue}
+    if(isSubHead(s)){flush();if(org)grp=cleanHead(s);else{org=cleanHead(s);grp=''}pend=null;continue}
+    const next=lines[i+1];
+    const nextIsDate=!!(next&&next.cells.length<2&&isDate(next.text));
+    if(pend&&!pend.sawName&&!pend.sawVacant&&(!L.gapBefore||isCommaName(s)||nextIsDate)){
+      pend.name=s;pend.sawName=true;continue;
+    }
+    flush();
+    pend={title:s.replace(/\s*\(\d+\)\s*$/,'').replace(/:$/,''),name:'',sawName:false,sawVacant:false,sawDate:false};
+  }
+  flush();
+  return out.map(r=>({org:r.org||inferOrg(r.title)||'Other Callings',group:r.group||inferGroup(r.title),title:r.title,name:r.name||''}));
+}
+function previewImport(){
+  const el=$('#impPreview');if(!el)return;
+  const text=($('#pasteIn')||{}).value||'';
+  if(!text.trim()){el.textContent='';return}
+  const rows=parseCallings(text);
+  if(!rows.length){el.textContent='Nothing recognized yet. Check that each calling, name, and date is on its own line.';el.className='preview warn';return}
+  const orgs=[...new Set(rows.map(r=>r.org))];
+  const groups=new Set(rows.filter(r=>r.group).map(r=>r.org+'::'+r.group));
+  const open=rows.filter(r=>!r.name).length;
+  el.className='preview';
+  el.innerHTML=`Found <strong>${rows.length}</strong> callings, ${open} open, across <strong>${orgs.length}</strong> organization${orgs.length===1?'':'s'}${groups.size?` and ${groups.size} groups`:''}.<br>Organizations: ${esc(orgs.join(', '))}.`;
+}
+function getOrg(name){let o=S.orgs.find(x=>x.name.toLowerCase()===name.toLowerCase());if(!o){o={id:uid(),name,collapsed:false};S.orgs.push(o)}return o}
+function getMember(name){const k=name.trim().toLowerCase().replace(/\s+/g,' ');let m=S.members.find(x=>x.name.toLowerCase().replace(/\s+/g,' ')===k);if(!m){m={id:uid(),name:name.trim(),avail:false};S.members.push(m)}return m}
+
+async function doImport(){
+  const text=($('#pasteIn')||{}).value||'';
+  if(!text.trim()){toast('Paste something to import first');return}
+  if(importTab==='callings'){
+    const rows=parseCallings(text);
+    if(!rows.length){toast('No callings found. Check the format described above.');return}
+    const mode=(document.querySelector('input[name=mode]:checked')||{}).value||'add';
+    if(mode==='replace'&&S.callings.length){
+      closeModal();
+      const ok=await askConfirm('Replace the whole board?',`This removes the ${S.callings.length} callings on the board now, along with any proposed changes, and imports ${rows.length} in their place. Undo can bring them back, but only while this page stays open.`,'Replace the board',true);
+      if(!ok)return;
+    }
+    commit(()=>{
+      if(mode==='replace'){S.orgs=[];S.callings=[];S.hidden=[]}
+      for(const r of rows){const o=getOrg(r.org);const mid=r.name?getMember(r.name).id:null;S.callings.push({id:uid(),orgId:o.id,group:r.group||'',cands:[],title:r.title,current:mid,proposed:mid})}
+    },`Imported ${rows.length} callings`);
+  }else{
+    let n=0;
+    commit(()=>{for(const raw of text.split(/\r?\n/)){const name=raw.split('\t')[0].trim();if(!name||/^name$/i.test(name))continue;const before=S.members.length;getMember(name);if(S.members.length>before)n++}},null);
+    toast(`Added ${n} member${n===1?'':'s'}`);
+  }
+  closeModal();
+}
+
+function readBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!valid(d))throw 0;commit(()=>{S=norm(d)},'Backup opened');closeModal()}catch(e){toast('That file isn\'t a Calling Planner backup')}};
+  r.onerror=()=>toast('Couldn\'t read that file');
+  r.readAsText(file);
+}
+
+async function exportData(){
+  if(!S.orgs.length&&!S.members.length){toast('Nothing to save yet');return}
+  const data=JSON.stringify({app:'calling-planner',version:1,rev:REV,savedAt:new Date().toISOString(),...S},null,2);
+  const d=new Date(),fn=`calling-planner-rev${REV}-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+  if(downloads){
+    try{await downloads.save({filename:fn,data});toast('Backup saved. It contains member names, so keep it somewhere private.');return}
+    catch(err){if(err&&(err.code==='declined')){toast('Save cancelled');return}if(err&&err.code==='rate_limited'){toast('A save is already waiting for your answer');return}}
+  }
+  openModal(`<h3>Save backup</h3><p>Copy this text into a file and keep it somewhere private. To restore it later, paste it into a file ending in .json and open it from Import.</p><textarea id="expTxt" readonly>${esc(data)}</textarea><div class="acts"><button class="btn" data-act="copyExp">Copy</button><button class="btn primary" data-act="modalCancel">Done</button></div>`);
+}
+
+function summaryText(){
+  const groups=[];
+  for(const o of S.orgs){
+    const cs=S.callings.filter(c=>c.orgId===o.id&&(changed(c)||deciding(c)));
+    if(!cs.length)continue;
+    const dec=cs.filter(deciding).map(c=>`Still deciding ${c.title}: ${cands(c).map(nm).join(' / ')}`);
+    const rel=cs.filter(c=>!deciding(c)&&c.current).map(c=>`Release ${nm(c.current)} as ${c.title}`);
+    const call=cs.filter(c=>!deciding(c)&&c.proposed).map(c=>`Call ${nm(c.proposed)} as ${c.title}`);
+    groups.push({o,rel,call,dec});
+  }
+  return groups;
+}
+function showSummary(){
+  const g=summaryText();
+  const open=S.callings.filter(isOpen).length,dec=S.callings.filter(deciding).length;
+  if(!g.length){openModal(`<h3>Summary</h3><p>No changes in the draft yet. Drag members onto callings to propose changes.</p><p>${open} open position${open===1?'':'s'}.</p><div class="acts"><button class="btn primary" data-act="modalCancel">Close</button></div>`);return}
+  const body=g.map(x=>`<h4>${esc(x.o.name)}</h4><ul>${x.rel.map(t=>`<li class="r nm">${esc(t)}</li>`).join('')}${x.call.map(t=>`<li class="c nm">${esc(t)}</li>`).join('')}${x.dec.map(t=>`<li class="d nm">${esc(t)}</li>`).join('')}</ul>`).join('');
+  openModal(`<h3>Proposed changes</h3><div class="summary">${body}</div><p>${open} position${open===1?'':'s'} still open${dec?`, ${dec} still being decided`:''}.</p>
+    <div class="acts"><button class="btn" data-act="applyAll" title="Make the draft the new current">Mark all as done</button><button class="btn" data-act="copySum">Copy as text</button><button class="btn primary" data-act="modalCancel">Close</button></div>`);
+}
+function copyText(t){(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied'),()=>toast('Copy was blocked. Select the text and copy it manually.'))}
+
+function sample(){
+  const data={
+    'Bishopric':[['Bishop','Hansen, David'],['First Counselor','Ortiz, Luis'],['Second Counselor','Palmer, James'],['Executive Secretary','Kim, Daniel'],['Ward Clerk','Nguyen, Peter'],['Assistant Ward Clerk','']],
+    'Elders Quorum':[['President','Brooks, Aaron'],['First Counselor','Castillo, Mateo'],['Second Counselor','Reed, Tyler'],['Secretary','Walsh, Connor']],
+    'Relief Society':[['President','Jensen, Laura'],['First Counselor','Morales, Ana'],['Second Counselor','Tanaka, Emi'],['Secretary','Clarke, Rachel']],
+    'Young Women':[['President','Foster, Megan'],['First Counselor','Patel, Priya'],['Second Counselor',''],['Secretary','Olsen, Kara'],['Gatherers of Light Advisor','Lund, Bethany','Gatherers of Light Class'],['Messengers of Hope Advisor','','Messengers of Hope Class'],['Builders of Faith Advisor','Rivas, Teresa','Builders of Faith Class']],
+    'Primary':[['President','Young, Hannah'],['First Counselor','Diaz, Sofia'],['Second Counselor','Bennett, Claire'],['Secretary','Hughes, Amy'],['Music Leader','Porter, Leah'],['Pianist',''],['Sunbeam Teacher','Grant, Emily','Sunbeam Class'],['Sunbeam Teacher','Grant, Ryan','Sunbeam Class'],['CTR 7 Teacher','Silva, Marco','CTR 7 Class'],['Valiant 10 Teacher','Ford, Nathan','Valiant 10 Class']],
+    'Sunday School':[['President','Carter, Ben'],['Youth Teacher','Evans, Julia'],['Gospel Doctrine Teacher','Lambert, Paul']],
+    'Music':[['Ward Music Coordinator','Russo, Gina'],['Organist','Kaur, Simran'],['Chorister','']],
+    'Other':[['Ward Mission Leader','Webb, Samuel'],['Temple and Family History Leader','Sato, Ken'],['Activities Committee Chair','Price, Dana']]
+  };
+  const bench=['Adams, Jordan','Baker, Chloe','Chen, Wei','Dixon, Marcus','Ellis, Natalie','Harper, Grace','Lopez, Andres','Mills, Olivia','Nash, Ethan','Quinn, Sarah'];
+  commit(()=>{S=blank();for(const [org,rows] of Object.entries(data)){const o=getOrg(org);for(const [t,n,g] of rows){const mid=n?getMember(n).id:null;S.callings.push({id:uid(),orgId:o.id,group:g||inferGroup(t),cands:[],title:t,current:mid,proposed:mid})}}bench.forEach(getMember)},'Sample ward loaded. These names are made up.');
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click',async e=>{
+  const a=e.target.closest('[data-act]');
+  if(e.target.id==='modal'){closeModal(null);return}
+  if(!e.target.closest('.revwrap'))setRevPop(false);
+  if(e.target.classList.contains('availbox'))return;
+  if(sel&&!e.target.closest('#modal')&&!e.target.closest('#selbar')){
+    const act=a&&a.dataset.act;
+    if(!['release','revert','renameC','moveC','delC','collapse','availAll','availNone','delMember','tab','renameG','colorG','ungroupG','chooseC','dropC','fillC'].includes(act)){
+      const slot=e.target.closest('.slot[data-cid]:not(.current-view), .openitem[data-cid]');
+      if(slot){const s=sel;sel=null;place(s.mid,s.from,slot.dataset.cid);render();return}
+      if(e.target.closest('#benchZone')&&act!=='pick'){const s=sel;sel=null;if(s.from)release(s.from);else render();return}
+    }
+  }
+  if(!a)return;
+  const d=a.dataset;
+  switch(d.act){
+    case 'pick':
+      if(ui.view!=='draft')return;
+      if(fill&&!d.from){
+        const f=fill;fill=null;
+        if(f.mode==='consider')addCand(f.cid,d.mid);else place(d.mid,null,f.cid);
+        render();break;
+      }
+      if(sel&&sel.mid===d.mid&&(sel.from||'')===(d.from||''))sel=null;
+      else sel={mid:d.mid,from:d.from||null};
+      render();break;
+    case 'cancelSel':sel=null;fill=null;render();break;
+    case 'fillC':{
+      if(ui.view!=='draft'){toast('Switch to Draft to make changes');break}
+      const c=C(d.cid);if(!c)break;
+      sel=null;fill={cid:d.cid,mode:d.mode||'place'};
+      ui.tab='avail';ui.memq='';
+      S.hidden=S.hidden.filter(x=>x!==c.orgId);
+      const o=O(c.orgId);if(o)o.collapsed=false;
+      render();
+      const box=$('#memq');if(box){box.value='';box.focus()}
+      const el=document.querySelector(`.slot[data-cid="${d.cid}"]`);
+      if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}
+      break}
+    case 'chooseC':chooseCand(d.cid,d.mid);break;
+    case 'dropC':dropCand(d.cid,d.mid);break;
+    case 'release':release(d.cid);break;
+    case 'revert':revert(d.cid);break;
+    case 'goto':{const el=document.querySelector(`.slot[data-cid="${d.cid}"]`);if(!el){const c=C(d.cid);if(c){S.hidden=S.hidden.filter(x=>x!==c.orgId);const o=O(c.orgId);if(o)o.collapsed=false;ui.q='';$('#q').value='';ui.changesOnly=false;save();render()}}const el2=document.querySelector(`.slot[data-cid="${d.cid}"]`);if(el2){el2.scrollIntoView({block:'center',behavior:'smooth'});el2.classList.remove('flash');void el2.offsetWidth;el2.classList.add('flash')}break}
+    case 'view':ui.view=d.v;sel=null;render();break;
+    case 'tab':ui.tab=d.t;render();break;
+    case 'revPop':setRevPop($('#revPop').hidden);break;
+    case 'availAll':case 'availNone':{
+      const on=d.act==='availAll';
+      const ids=benchMembers().ms.map(m=>m.id);
+      if(!ids.length){toast('No one is shown right now');break}
+      commit(()=>{ids.forEach(id=>{const m=M(id);if(m)m.avail=on})},`${ids.length} ${on?'marked available':'unmarked'}`);
+      break}
+    case 'undo':undo();break;
+    case 'blur':ui.blur=!ui.blur;render();break;
+    case 'edit':ui.edit=!ui.edit;render();break;
+    case 'allOrgs':S.hidden=[];save();render();break;
+    case 'toggleOrg':S.hidden=S.hidden.includes(d.oid)?S.hidden.filter(x=>x!==d.oid):[...S.hidden,d.oid];save();render();break;
+    case 'collapse':{const o=O(d.oid);if(o){o.collapsed=!o.collapsed;save();render()}break}
+    case 'summary':showSummary();break;
+    case 'import':importTab=S.orgs.length?importTab:'callings';showImport();break;
+    case 'impTab':importTab=d.t;showImport();break;
+    case 'doImport':doImport();break;
+    case 'export':exportData();break;
+    case 'copyExp':copyText($('#expTxt').value);break;
+    case 'sample':sample();break;
+    case 'modalCancel':closeModal(null);break;
+    case 'modalYes':closeModal(true);break;
+    case 'modalPick':closeModal(d.v);break;
+    case 'copySum':{const t=summaryText().map(x=>`${x.o.name}\n${[...x.rel,...x.call,...x.dec].map(s=>'  '+s).join('\n')}`).join('\n\n')+`\n\nCalling Planner rev ${REV} — drafted ${new Date().toLocaleDateString()}`;copyText(t);break}
+    case 'applyAll':{closeModal();const ok=await askConfirm('Mark all changes as done?','Do this after the releases and calls have been extended, sustained, and recorded in LCR. The draft becomes the new current list.','Mark as done');if(ok)commit(()=>{S.callings.forEach(c=>c.current=c.proposed)},'Draft is now the current list');break}
+    case 'clearAll':{closeModal();const ok=await askConfirm('Clear everything?','This removes all organizations, callings, and members from this browser. Save a backup first if you might need it.','Clear everything',true);if(ok){commit(()=>{S=blank()},'Cleared');try{localStorage.removeItem(KEY)}catch(e){}}break}
+    case 'addOrg':{const n=await askText('New organization','','Organization name');if(n&&n.trim())commit(()=>getOrg(n.trim()),null);break}
+    case 'renameOrg':{const o=O(d.oid);const n=await askText('Rename organization',o.name);if(n&&n.trim())commit(()=>{o.name=n.trim()},null);break}
+    case 'moveOrg':{const i=S.orgs.findIndex(o=>o.id===d.oid),j=i+Number(d.dir);if(j>=0&&j<S.orgs.length)commit(()=>{const [o]=S.orgs.splice(i,1);S.orgs.splice(j,0,o)},null);break}
+    case 'delOrg':{const o=O(d.oid);const ok=await askConfirm(`Delete ${o.name}?`,'Its callings are removed from the board. Members stay in the member list.','Delete',true);if(ok)commit(()=>{S.orgs=S.orgs.filter(x=>x.id!==o.id);S.callings=S.callings.filter(c=>c.orgId!==o.id)},`${o.name} deleted`);break}
+    case 'addC':{const n=await askText('New calling','','Calling name');if(n&&n.trim())commit(()=>S.callings.push({id:uid(),orgId:d.oid,group:'',cands:[],title:n.trim(),current:null,proposed:null}),null);break}
+    case 'renameC':{const c=C(d.cid);const n=await askText('Rename calling',c.title);if(n&&n.trim())commit(()=>{c.title=n.trim()},null);break}
+    case 'moveC':{
+      const c=C(d.cid);if(!c)break;
+      const from=O(c.orgId);
+      const opts=S.orgs.map(o=>({value:o.id,label:o.id===c.orgId?o.name+' (stays here)':o.name}));
+      opts.push({value:'__new',label:'New organization…',alt:true});
+      const pick=await askChoice(`Move ${c.title}`,`Now under ${from?from.name:'no organization'}${c.group?`, in ${c.group}`:''}. Pick an organization, then a group inside it.`,opts);
+      if(!pick)break;
+      let oid=pick;
+      if(pick==='__new'){
+        const n=await askText('New organization','','Organization name');
+        if(!n||!n.trim())break;
+        commit(()=>{c.orgId=getOrg(n.trim()).id;c.group=''},`${c.title} moved to ${n.trim()}`);
+        break;
+      }
+      const to=O(oid);if(!to)break;
+      const gopts=orgGroups(oid).filter(g=>!(oid===c.orgId&&g===c.group)).map(g=>({value:'g:'+g,label:g}));
+      gopts.push({value:'__none',label:'No group',alt:true},{value:'__newg',label:'New group…',alt:true});
+      const gp=await askChoice(`Group inside ${to.name}`,`Where should ${c.title} sit in this column?`,gopts);
+      if(!gp)break;
+      if(gp==='__newg'){
+        const gn=await askText('New group','','Group name, such as Presidency');
+        if(!gn||!gn.trim())break;
+        commit(()=>{c.orgId=oid;c.group=gn.trim()},`${c.title} moved to ${gn.trim()}`);
+        break;
+      }
+      const g=gp==='__none'?'':gp.slice(2);
+      commit(()=>{c.orgId=oid;c.group=g},`${c.title} moved to ${g||to.name}`);
+      break}
+    case 'renameG':{
+      const n=await askText('Rename group',d.g,'Group name');
+      if(!n||!n.trim()||n.trim()===d.g)break;
+      const nn=n.trim();
+      commit(()=>{
+        S.callings.forEach(c=>{if(c.orgId===d.oid&&(c.group||'')===d.g)c.group=nn});
+        const o=S.groupColors||{},k=d.oid+'::'+d.g;
+        if(o[k]!=null){o[d.oid+'::'+nn]=o[k];delete o[k]}
+      },`Group renamed to ${nn}`);
+      break}
+    case 'colorG':{
+      const k=d.oid+'::'+d.g;
+      const now=(S.groupColors&&S.groupColors[k]!=null)?S.groupColors[k]:orgGroups(d.oid).indexOf(d.g);
+      commit(()=>{S.groupColors=S.groupColors||{};S.groupColors[k]=(((now<0?0:now)+1)%NG)},null);
+      break}
+    case 'ungroupG':{
+      const n=S.callings.filter(c=>c.orgId===d.oid&&(c.group||'')===d.g).length;
+      const ok=await askConfirm(`Remove the ${d.g} grouping?`,`Its ${n} calling${n===1?'':'s'} stay in this organization, just without the band.`,'Remove grouping');
+      if(ok)commit(()=>{S.callings.forEach(c=>{if(c.orgId===d.oid&&(c.group||'')===d.g)c.group=''})},`${d.g} grouping removed`);
+      break}
+    case 'delC':{const c=C(d.cid);const ok=await askConfirm(`Delete ${c.title}?`,'This removes the calling from the board.','Delete',true);if(ok)commit(()=>{S.callings=S.callings.filter(x=>x.id!==c.id)},null);break}
+    case 'delMember':{const m=M(d.mid);const ok=await askConfirm(`Remove ${m.name}?`,'They are removed from the member list and from any callings on the board.','Remove',true);if(ok)commit(()=>{S.members=S.members.filter(x=>x.id!==m.id);S.callings.forEach(c=>{if(c.current===m.id)c.current=null;if(c.proposed===m.id)c.proposed=null})},null);break}
+  }
+});
+
+document.addEventListener('submit',e=>{
+  e.preventDefault();
+  if(e.target.id==='askForm'){closeModal($('#askIn').value);return}
+  if(e.target.id==='addMember'){const v=$('#newMember').value.trim();if(!v)return;const before=S.members.length;commit(()=>getMember(v),null);toast(S.members.length>before?`${v} added`:`${v} is already on the list`);$('#newMember').value='';$('#newMember').focus()}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='fileIn'&&e.target.files[0])readBackup(e.target.files[0]);
+  if(e.target.classList&&e.target.classList.contains('availbox')){const m=M(e.target.dataset.mid);if(m)commit(()=>{m.avail=e.target.checked},null)}
+  if(e.target.id==='benchFilter'){ui.bench=e.target.value;render()}
+  if(e.target.id==='availOnly'){ui.availOnly=e.target.checked;render()}
+  if(e.target.id==='chgOnly'){ui.changesOnly=e.target.checked;render()}
+  if(e.target.id==='compact'){ui.compact=e.target.checked;render()}
+  if(e.target.id==='openOnly'){ui.openOnly=e.target.checked;render()}
+});
+$('#q').addEventListener('input',e=>{ui.q=e.target.value.trim();renderBoard()});
+$('#memq').addEventListener('input',e=>{ui.memq=e.target.value.trim();renderBench()});
+document.addEventListener('input',e=>{if(e.target.id==='pasteIn')previewImport()});
+document.addEventListener('paste',e=>{if(e.target.id==='pasteIn')setTimeout(previewImport,0)});
+
+/* Drag and drop */
+let overEl=null;
+function setOver(el){if(overEl===el)return;if(overEl)overEl.classList.remove('over');overEl=el;if(el)el.classList.add('over')}
+document.addEventListener('dragstart',e=>{
+  const ch=e.target.closest&&e.target.closest('[data-mid][draggable="true"]');
+  if(!ch||ui.view!=='draft')return;
+  drag={mid:ch.dataset.mid,from:ch.dataset.from||null};sel=null;renderSel();
+  try{e.dataTransfer.setData('text/plain',ch.dataset.mid);e.dataTransfer.effectAllowed='move'}catch(err){}
+  document.body.classList.add('dragging');if(drag.from)document.body.classList.add('dragging-slot');
+});
+document.addEventListener('dragend',()=>{drag=null;setOver(null);document.body.classList.remove('dragging','dragging-slot')});
+document.addEventListener('dragover',e=>{
+  if(!drag)return;
+  const t=e.target.closest('.slot[data-cid]:not(.current-view), .openitem[data-cid]');
+  const bz=e.target.closest('#benchZone');
+  if(t){e.preventDefault();setOver(t)}
+  else if(bz&&drag.from){e.preventDefault();setOver(null)}
+  else setOver(null);
+});
+document.addEventListener('drop',e=>{
+  if(!drag)return;e.preventDefault();
+  const t=e.target.closest('.slot[data-cid]:not(.current-view), .openitem[data-cid]');
+  const d=drag;drag=null;setOver(null);document.body.classList.remove('dragging','dragging-slot');
+  if(t)place(d.mid,d.from,t.dataset.cid);
+  else if(e.target.closest('#benchZone')&&d.from)release(d.from);
+});
+
+document.addEventListener('keydown',e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName);
+  if(e.key==='Escape'){if($('#modal').classList.contains('on'))closeModal(null);else if(!$('#revPop').hidden)setRevPop(false);else if(fill||sel){fill=null;sel=null;render()}return}
+  if(typing)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}
+  else if(e.key.toLowerCase()==='h'&&!e.ctrlKey&&!e.metaKey){ui.blur=!ui.blur;render()}
+});
+
+$('#revTag').textContent='Rev '+REV;
+$('#revTag').title=`Revision ${REV}, ${REV_DATE}. See How to use for what changed.`;
+$('#revFull').textContent=`Rev ${REV} — ${REV_DATE}`;
+render();
+})();
+</script>
+</body>
+</html>
