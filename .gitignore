@@ -1,0 +1,11 @@
+# Confidential board backups and exported membership data
+*.json
+*.tsv
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.bak
+*.backup
+.DS_Store
+Thumbs.db
